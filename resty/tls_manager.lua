@@ -32,10 +32,10 @@ function tls_manager.new(args)
     local o = "resty.tls_manager.strategy_" .. name
     if not pcall(require, o) then
       error("strategy not found or syntax error in: " .. name)
-   end
-   -- instantiate and returns the strategy object
-   -- passing the object constructor arguments
-   return require(o).new(self.args)
+    end
+    -- instantiate and returns the strategy object
+    -- passing the object constructor arguments
+    return require(o).new(self.args)
   end
 
   -- retrieves the domain name out of the
