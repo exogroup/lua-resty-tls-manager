@@ -70,6 +70,11 @@ function tls_strategy_files.new(args)
   -- returns both the certificate file and key for the given domain
   function self.retrieve(domain)
     local cert_file, key_file = self.get_certificate_files(domain)
+
+    -- print useful debug information
+    print("reading certificate file from: " .. cert_file)
+    print("reading certificate key from: " .. key_file)
+
     return self.file_get_contents(cert_file),
            self.file_get_contents(key_file)
   end
