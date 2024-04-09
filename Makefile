@@ -1,5 +1,4 @@
-PREFIX 			?= /usr/local
-LUA_INCLUDE_DIR ?= $(PREFIX)/include
+PREFIX          ?= /usr/local
 LUA_LIB_DIR     ?= $(PREFIX)/lib/lua/$(LUA_VERSION)
 INSTALL         ?= install
 
@@ -8,7 +7,8 @@ INSTALL         ?= install
 all: ;
 
 install: all
-	$(INSTALL) -d $(DESTDIR)/$(LUA_LIB_DIR)/resty
-	$(INSTALL) lib/resty/*.lua $(DESTDIR)/$(LUA_LIB_DIR)/resty/
-	$(INSTALL) -d $(DESTDIR)/$(LUA_LIB_DIR)/tls_manager
-	$(INSTALL) lib/resty/tls_manager/*.lua $(DESTDIR)/$(LUA_LIB_DIR)/resty/tls_manager/
+	$(INSTALL) -d $(DESTDIR)$(LUA_LIB_DIR)/resty
+	$(INSTALL) lib/resty/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/
+	$(INSTALL) -d $(DESTDIR)$(LUA_LIB_DIR)/resty/tls_manager
+	$(INSTALL) lib/resty/tls_manager/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/tls_manager/
+
