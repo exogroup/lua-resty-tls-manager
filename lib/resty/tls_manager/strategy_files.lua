@@ -55,7 +55,7 @@ function tls_strategy_files.new(args)
   -- returns the contents of a file
   function self.file_get_contents(file)
     if not self.file_exists(file) then
-      error("file cannot be read: " .. file)
+      ngx.log(ngx.ERR, "file cannot be read: " .. file)
       return
     end
     local f = io.open(file, "r")

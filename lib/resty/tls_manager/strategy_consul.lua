@@ -59,8 +59,9 @@ function tls_strategy_consul.new(args)
       { KV = { Verb = "get", Key = consul_key_cert_key  } },
     })
 
+    -- returns the error, if present
     if not res then
-      error(err)
+      ngx.log(ngx.ERR, err)
       return
     end
 

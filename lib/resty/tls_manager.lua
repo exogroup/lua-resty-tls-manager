@@ -17,9 +17,10 @@ function tls_manager.new(args)
   self.ssl = require "ngx.ssl"
 
   -- configure the shared cache
-  self.cache = ngx.shared.tls
+  local cache_name = args.cache_name or "tls"
+  self.cache = ngx.shared[cache_name]
   if type(self.cache) ~= "table" then
-    error("missing 'tls' shared dictionary")
+    ngx.log(ngx.ERR, "missing '".. cache_name .."' shared dictionary")
     return
   end
 
@@ -31,7 +32,7 @@ function tls_manager.new(args)
     local name = self.args.strategy or "files"
     local o = "resty.tls_manager.strategy_" .. name
     if not pcall(require, o) then
-      error("strategy not found or syntax error in: " .. name)
+      ngx.log(ngx.ERR, "strategy not found or syntax error in: " .. name)
     end
     -- instantiate and returns the strategy object
     -- passing the object constructor arguments
@@ -93,6 +94,7 @@ function tls_manager.new(args)
       return
     end
     -- attempt reading data from cache first
+    local from_cache = false
     local cert, key = self.get_cached_certificate(domain)
     if cert == nil or key == nil then
       -- certificate not in cache, retrieving from origin
@@ -101,7 +103,7 @@ function tls_manager.new(args)
       print("using strategy [" .. strategy.name() .. "] to fetch certificate data")
       cert, key = strategy.retrieve(domain)
       if cert == nil or key == nil then
-        error("cannot retrieve certificate data for domain: " .. domain)
+        ngx.log(ngx.ERR, "cannot retrieve certificate data for domain: " .. domain)
         return
       end
       -- save certificate data in cache
@@ -109,23 +111,31 @@ function tls_manager.new(args)
       self.cache_certificate(domain, cert, key)
     else
       -- certificate loaded from cache
+      from_cache = true
       print('certificate retrieved from cache for domain: ' .. domain)
     end
-    return cert, key
+    return cert, key, domain, from_cache
   end
 
   -- function to be called within ssl_certificate_by_lua_block
   -- this is where all the magic happens
   function self.handle()
    print("handling SSL handshake for server name: " .. self.ssl.server_name())
-   local cert, key = self.get_certificate()
+   local cert, key, domain, from_cache = self.get_certificate()
     if cert == nil or key == nil then
-      error("something went wrong while attempting to fetch the certificate data")
+      ngx.log(ngx.ERR, "something went wrong while attempting to fetch certificate data")
       return
     end
+    -- clears the original SSL certificates
+    local ok, err = self.ssl.clear_certs()
+    if not ok then
+      ngx.log(ngx.ERR, err)
+      return
+    end
+    -- assign and return the retrieved certificate
     self.ssl.set_cert(self.ssl.parse_pem_cert(cert))
     self.ssl.set_priv_key(self.ssl.parse_pem_priv_key(key))
-    print("TLS certificate applied successfully")
+    print("returned SSL certificate for domain: " .. domain .. "; from_cache=" .. from_cache)
   end
 
   -- returns the object instance
