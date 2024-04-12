@@ -135,7 +135,7 @@ function tls_manager.new(args)
     -- assign and return the retrieved certificate
     self.ssl.set_cert(self.ssl.parse_pem_cert(cert))
     self.ssl.set_priv_key(self.ssl.parse_pem_priv_key(key))
-    print("returned SSL certificate for domain: " .. domain .. "; from_cache=" .. from_cache)
+    print("returned SSL certificate for domain: " .. domain .. "; from_cache=" .. tostring(from_cache))
   end
 
   -- returns the object instance
