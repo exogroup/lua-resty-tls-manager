@@ -11,4 +11,5 @@ install: all
 	$(INSTALL) lib/resty/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/
 	$(INSTALL) -d $(DESTDIR)$(LUA_LIB_DIR)/resty/tls_manager
 	$(INSTALL) lib/resty/tls_manager/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/tls_manager/
-
+	$(INSTALL) -d $(DESTDIR)$(LUA_LIB_DIR)/resty/tls_manager/strategy
+	$(INSTALL) lib/resty/tls_manager/strategy/*.lua $(DESTDIR)$(LUA_LIB_DIR)/resty/tls_manager/strategy/
