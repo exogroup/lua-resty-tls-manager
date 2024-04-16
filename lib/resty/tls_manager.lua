@@ -89,7 +89,7 @@ local function new()
   end
 
   -- retrieves the certificate using the defined strategy
-  function self.stragy_get_certificate(domain)
+  function self.strategy_get_certificate(domain)
     local strategy = self.strategy()
     print("using strategy [" .. strategy.name() .. "] to fetch certificate data")
     return strategy.retrieve(domain)
@@ -109,7 +109,7 @@ local function new()
     if cert == nil or key == nil then
       -- certificate not in cache, retrieving from origin
       print("certificate not found in cache for domain: " .. domain)
-      cert, key = self.stragy_get_certificate(domain)
+      cert, key = self.strategy_get_certificate(domain)
       if cert == nil or key == nil then
         ngx.log(ngx.ERR, "cannot retrieve certificate data for domain: " .. domain)
         return
