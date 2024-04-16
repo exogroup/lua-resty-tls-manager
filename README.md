@@ -8,12 +8,12 @@ On `nginx.conf`:
 
 ```nginx
 http {
-  ...
+  # ... #
 
-  -- this must match the 'cache_name' parameter
+  # this must match the 'cache_name' parameter
   lua_shared_dict tls 64m;
 
-  -- optional
+  # optional
   init_by_lua_block {
     local tlsmgr = require("resty.tls_manager")
     tlsmgr.configure({
@@ -21,7 +21,7 @@ http {
     })
   }
 
-  ...
+  # ... #
 }
 ```
 
