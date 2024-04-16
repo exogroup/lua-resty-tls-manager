@@ -1,46 +1,76 @@
-local tls_manager = {}
 
--- preload modules
-function tls_manager.preload_modules()
-  require "resty.tls_manager.cache"
-  require "resty.tls_manager.strategy.files"
-  require "resty.tls_manager.strategy.consul"
-end
+local tlsmgr = {}
 
-function tls_manager.new(args)
-  -- actual object
+tlsmgr.settings = {}
+tlsmgr.instance = nil
+tlsmgr.ssl = require "ngx.ssl"
+
+-- private function which returns an instance of
+-- the actual tls manager object
+local function new()
   local self = {}
 
-  -- when no args are passed
-  self.args = args or {}
-
-  -- load the nginx ssl library
-  self.ssl = require "ngx.ssl"
+  -- default values
+  self.settings = tlsmgr.settings
 
   -- configure the shared cache
-  self.cache = require("resty.tls_manager.cache").new(args.cache_name, args.cache_ttl)
+  self.cache = require("resty.tls_manager.cache").new(
+    self.settings.cache_name,
+    self.settings.cache_ttl
+  )
   if self.cache == nil then
     ngx.log(ngx.ERR, "unable to initialize the shared cache")
     return
   end
 
+  -- returns the ngx.ssl instance
+  function self.ssl()
+    return tlsmgr.ssl
+  end
+
+  -- returns the ssl server name
+  function self.ssl_server_name()
+    return self.ssl().server_name()
+  end
+
+  -- configured the connection ssl certificate
+  function self.ssl_set_certificate(cert, key)
+    local ssl = self.ssl()
+    local cert_pem = ssl.parse_pem_cert(cert)
+    local key_pem = ssl.parse_pem_priv_key(key)
+    local ok, err = ssl.clear_certs()
+    if not ok then
+      ngx.log(ngx.ERR, err)
+      return false
+    end
+    ssl.set_cert(cert_pem)
+    ssl.set_priv_key(key_pem)
+    return true
+  end
+
   -- returns the strategy object
   function self.strategy()
-    local name = self.args.strategy or "files"
-    local prefix = self.args.strategy_prefix or "resty.tls_manager.strategy"
+    local name = self.settings.strategy
+      or "files"
+    local prefix = self.settings.strategy_prefix
+      or "resty.tls_manager.strategy"
+
     local o = prefix .. "." .. name
     if not pcall(require, o) then
       ngx.log(ngx.ERR, "strategy not found or syntax error in: " .. name ..", prefix: ".. prefix)
     end
     -- instantiate and returns the strategy object
     -- passing the object constructor arguments
-    return require(o).new(self.args)
+    return require(o).new(self.settings)
   end
 
   -- retrieves the domain name out of the
   -- SSL server name provided by nginx
   function self.get_ssl_domain()
-    local server_name = self.ssl.server_name()
+    return self.get_domain(self.ssl_server_name())
+  end
+
+  function self.get_domain(server_name)
     local n = 0
     for i = 1, #server_name do
       if server_name:sub(i, i) == '.' then
@@ -70,7 +100,7 @@ function tls_manager.new(args)
     -- retrieves the domain
     local domain = self.get_ssl_domain()
     if domain == "" or domain == nil then
-      ngx.log(ngx.ERR, "unable to parse domain out of SSL server name: " .. self.ssl.server_name())
+      ngx.log(ngx.ERR, "unable to parse domain out of SSL server name: " .. self.ssl_server_name())
       return
     end
     -- attempt reading data from cache first
@@ -85,7 +115,10 @@ function tls_manager.new(args)
         return
       end
       print("storing certificate for domain ".. domain .." in shared cache")
-      self.cache.set_certificate(domain, cert, key)
+      if not self.cache.set_certificate(domain, cert, key) then
+        ngx.log(ngx.ERR, "failed to store the certificate into shared cache")
+        return
+      end
     else
       -- certificate loaded from cache
       from_cache = true
@@ -97,26 +130,61 @@ function tls_manager.new(args)
   -- function to be called within ssl_certificate_by_lua_block
   -- this is where all the magic happens
   function self.handle()
-   print("handling SSL handshake for server name: " .. self.ssl.server_name())
+   print("handling SSL handshake for server name: " .. self.ssl_server_name())
    local cert, key, domain, from_cache = self.get_certificate()
     if cert == nil or key == nil then
       ngx.log(ngx.ERR, "something went wrong while attempting to fetch certificate data")
       return
     end
-    -- clears the original SSL certificates
-    local ok, err = self.ssl.clear_certs()
-    if not ok then
-      ngx.log(ngx.ERR, err)
-      return
-    end
     -- assign and return the retrieved certificate
-    self.ssl.set_cert(self.ssl.parse_pem_cert(cert))
-    self.ssl.set_priv_key(self.ssl.parse_pem_priv_key(key))
-    print("returned SSL certificate for domain: " .. domain .. "; from_cache=" .. tostring(from_cache))
+    if self.ssl_set_certificate(cert, key) then
+      print("returned SSL certificate for domain: " .. domain .. "; from_cache=" .. tostring(from_cache))
+    else
+      print("error while returning the SSL certificate for domain: ".. domain)
+    end
   end
 
-  -- returns the object instance
+  -- function to be called for clearing the cache for a domain
+  function self.clear_cache(domain)
+    if domain == "" or domain == nil then
+      ngx.log(ngx.ERR, "refusing to handle a clear cache request for an empty domain")
+      return false
+    end
+    print("handling purging SSL certificate cache request for domain: ", domain)
+    if self.cache.delete_certificate(domain) then
+      print("SSL certificate cache cleared successfully for domain: ", domain)
+      return true
+    else
+      ngx.log(ngx.ERR, "failed to clear SSL certificate cache for domain: ", domain)
+      return false
+    end
+  end
+
   return self
 end
 
-return tls_manager
+-- configure the tls manager instance
+function tlsmgr.configure(settings)
+  tlsmgr.settings = settings or {}
+  return tlsmgr
+end
+
+-- returns the tls manager instance
+function tlsmgr.get_instance()
+  if tlsmgr.instance == nil then
+    tlsmgr.instance = new()
+  end
+  return tlsmgr.instance
+end
+
+-- shortcut
+function tlsmgr.handle()
+  return tlsmgr.get_instance().handle()
+end
+
+-- shortcut
+function tlsmgr.clear_cache(domain)
+  return tlsmgr.get_instance().clear_cache(domain)
+end
+
+return tlsmgr

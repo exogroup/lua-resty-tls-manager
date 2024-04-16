@@ -57,7 +57,7 @@ function cache.new(name, ttl)
   -- stores both certificate file and key in the
   -- shared cache for later retrieval
   function self.set_certificate(domain, cert, key)
-    return self.set_certificate_file(domain, cert),
+    return self.set_certificate_file(domain, cert) and
            self.set_certificate_key(domain, key)
   end
 
@@ -71,21 +71,21 @@ function cache.new(name, ttl)
   -- deletes the certificate file from the
   -- shared cache
   function self.delete_certificate_file(domain)
-    key = self.crt(domain)
+    local key = self.crt(domain)
     return self.cache:delete(key)
   end
 
   -- deletes the certificate key from the
   -- shared cache
   function self.delete_certificate_key(domain)
-    key = self.key(domain)
+    local key = self.key(domain)
     return self.cache:delete(key)
   end
 
   -- deletes both certificate file and key from
   -- the shared cache
   function self.delete_certificate(domain)
-    return self.delete_certificate_file(domain),
+    return self.delete_certificate_file(domain) and
            self.delete_certificate_key(domain)
   end
 
