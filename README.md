@@ -6,11 +6,11 @@ Library to automatically provide SSL certificate files
 
 On `nginx.conf`:
 
-```
+```nginx
 http {
   ...
 
-  -- this is mandatory
+  -- this must match the 'cache_name` parameter
   lua_shared_dict tls 64m;
 
   -- optional, but speeds up modules loading
@@ -22,13 +22,12 @@ http {
 }
 ```
 
-On the relevant `conf.d/site.conf`:
+On the relevant `conf.d/<site>.conf`:
 
-```
+```nginx
 server {
-  listen [::]:80;
   listen 443 ssl;
-  listen [::]:443 ssl;
+
   server_name site.example.com;
 
   # nginx always expect certificate configuration to be
@@ -39,8 +38,7 @@ server {
 
   ssl_certificate_by_lua_block {
     local tls_mgr = require("resty.tls_manager").new({
-      strategy = "files",
-      -- other options here --
+      -- parameters here
     })
     tls_mgr:handle()
   }
@@ -55,23 +53,28 @@ the origin
 
 ### Files
 
-```
+```lua
 local tls_mgr = require("resty.tls_manager").new({
   -- strategy to use
-  strategy     = "files",         -- default: "files"
+  strategy        = "files",         -- default: "files"
+  -- strategy prefix (for custom implementations)
+  strategy_prefix = "my.strategy"    -- default: "resty.tls_manager.strategy"
+  -- ngx.shared[] dictionary name
+  cache_name      = "foo"            -- default: "tls"
   -- certificate cache ttl,
-  cache_ttl    = 300,             -- default: 3600
+  cache_ttl       = 300,             -- default: 3600
   -- path where to load certificates from
-  certs_path   = "/path/to/certs" -- default: "/etc/pki/tls/certs"
+  certs_path      = "/path/to/certs" -- default: "/etc/nginx/ssl"
   -- path where to load certificate keys from
-  keys_path    = "/path/to/keys"  -- default: "/etc/pki/tls/private"
+  keys_path       = "/path/to/keys"  -- default: "/etc/nginx/ssl"
   -- certificates files prefix
-  certs_prefix = "prefix."        -- default: "wildcard."
+  certs_prefix    = "crtprefix."     -- default: ""
   -- certificates key files prefix
-  keys_prefix  = "prefix."        -- default: "wildcard."
+  keys_prefix     = "keyprefix."     -- default: ""
   -- certificate files extension
-  certs_ext    = ".ext1"          -- default: ".crt"
+  certs_suffix    = ".foo"           -- default: ".crt"
   -- certificate key files extension
+  keys_suffix     = ".bar"           -- default: ".key"
 })
 tls_mgr:handle()
 ```
@@ -80,7 +83,7 @@ tls_mgr:handle()
 
 Requires: [lua-resty-consul](https://github.com/hamishforbes/lua-resty-consul)
 
-```
+```lua
 local tls_mgr = require("resty.tls_manager").new({
   -- strategy to use
   strategy     = "consul",        -- default: "files"
@@ -94,6 +97,10 @@ local tls_mgr = require("resty.tls_manager").new({
   certs_prefix = "prefix."        -- default: ""
   -- certificates key files prefix
   keys_prefix  = "prefix."        -- default: ""
+    -- certificate files suffix
+  certs_suffix = ".foo"           -- default: ""
+  -- certificate key files suffix
+  keys_suffix  = ".bar"           -- default: ""
   -- consul host
   consul_host  = "192.168.1.2"    -- default: "127.0.0.1"
   -- consul port
