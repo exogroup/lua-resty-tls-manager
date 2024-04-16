@@ -10,7 +10,7 @@ On `nginx.conf`:
 http {
   ...
 
-  -- this must match the 'cache_name` parameter
+  -- this must match the 'cache_name' parameter
   lua_shared_dict tls 64m;
 
   -- optional
