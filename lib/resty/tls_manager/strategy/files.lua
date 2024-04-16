@@ -8,17 +8,17 @@ function tls_strategy_files.new(args)
   local self = {}
 
   -- path to certificate files
-  self.certs_path   = args.certs_path   or "/etc/pki/tls/certs"
+  self.certs_path   = args.certs_path   or "/etc/nginx/ssl"
   -- path to certificate keys
-  self.keys_path    = args.keys_path    or "/etc/pki/tls/private"
+  self.keys_path    = args.keys_path    or "/etc/nginx/ssl"
   -- certificate file prefix
-  self.certs_prefix = args.certs_prefix or "wildcard."
+  self.certs_prefix = args.certs_prefix or ""
   -- certificate key filename prefix
-  self.keys_prefix  = args.keys_prefix  or "wildcard."
+  self.keys_prefix  = args.keys_prefix  or ""
   -- certificate file extension
-  self.certs_ext    = args.certs_ext    or ".crt"
+  self.certs_suffix = args.certs_suffix or ".crt"
   -- certificate key extension
-  self.keys_ext     = args.keys_ext     or ".key"
+  self.keys_suffix  = args.keys_suffix  or ".key"
 
   -- returns the strategy name for loggin purposes
   function self.name()
@@ -27,12 +27,12 @@ function tls_strategy_files.new(args)
 
   -- returns the certificate file path
   function self.get_cert_file_path(domain)
-    return self.certs_path .. "/" .. self.certs_prefix .. domain .. self.certs_ext
+    return self.certs_path .. "/" .. self.certs_prefix .. domain .. self.certs_suffix
   end
 
   -- returns the certificate key path
   function self.get_cert_key_path(domain)
-    return self.keys_path  .. "/" .. self.keys_prefix  .. domain .. self.keys_ext
+    return self.keys_path  .. "/" .. self.keys_prefix  .. domain .. self.keys_suffix
   end
 
   -- returns both the certificate file and certificate key file paths
@@ -41,29 +41,15 @@ function tls_strategy_files.new(args)
            self.get_cert_key_path(domain)
   end
 
-  -- checks if a file exists
-  function self.file_exists(file)
-    local f = io.open(file, "r")
-    if f then
-      f:close()
-      return true
-    else
-      return false
-    end
-  end
-
   -- returns the contents of a file
   function self.file_get_contents(file)
-    if not self.file_exists(file) then
+    local f = io.open(file, "r")
+    if not f then
       ngx.log(ngx.ERR, "file cannot be read: " .. file)
       return
     end
-    local f = io.open(file, "r")
-    local data = ""
-    if f then
-      data = f:read("*a")
-      f:close()
-    end
+    local data = f:read("a*")
+    f:close()
     return data
   end
 
