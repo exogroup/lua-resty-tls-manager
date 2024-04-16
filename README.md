@@ -132,3 +132,22 @@ local tlsmgr = require("resty.tls_manager").configure({
 })
 tlsmgr.handle()
 ```
+
+## On-demand SSL cache clearing
+```nginx
+server {
+  listen 80 default;
+  server_name localhost;
+
+  location ~ ^/clear/(?<domain>[^/]+)$ {
+    content_by_lua_block {
+      local tlsmgr = require("resty.tls_manager")
+      if not tlsmgr.clear_cache(ngx.var.domain) then
+        ngx.exit(500)
+      end
+    }
+  }
+}
+```
+Then access `http://host/clear/example.com` to have the certificate
+removed from the shared cache.
