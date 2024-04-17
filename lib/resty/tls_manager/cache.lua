@@ -15,78 +15,78 @@ function cache.new(name, ttl)
   end
 
   -- returns the certificate file cache key name
-  function self.crt(domain)
-    return domain .. "_crt"
+  function self.crt(domain, type)
+    return "crt--" .. type .. "--" .. domain
   end
 
   -- returns the certificate key cache key name
-  function self.key(domain)
-    return domain .. "_key"
+  function self.key(domain, type)
+    return "key--" .. type .. "--" .. domain
   end
 
   -- retrieves the certificate for a domain
   -- stored in shared cache. Returns nil when
   -- the certificate is not found
-  function self.get_certificate_file(domain)
-    local key = self.crt(domain)
+  function self.get_certificate_file(domain, type)
+    local key = self.crt(domain, type)
     return self.cache:get(key)
   end
 
   -- retrieves the certificate key for a domain
   -- stored in shared cache. Returns nil when
   -- the keys is not found
-  function self.get_certificate_key(domain)
-    local key = self.key(domain)
+  function self.get_certificate_key(domain, type)
+    local key = self.key(domain, type)
     return self.cache:get(key)
   end
 
   -- stores the certificate for a domain in the
   -- shared cache for later retrieval
-  function self.set_certificate_file(domain, data)
-    local key = self.crt(domain)
+  function self.set_certificate_file(domain, type, data)
+    local key = self.crt(domain, type)
     return self.cache:set(key, data, self.ttl)
   end
 
   -- stores the certificate key for a domain in the
   -- shared cache for later retrieval
-  function self.set_certificate_key(domain, data)
-    local key = self.key(domain)
+  function self.set_certificate_key(domain, type, data)
+    local key = self.key(domain, type)
     return self.cache:set(key, data, self.ttl)
   end
 
   -- stores both certificate file and key in the
   -- shared cache for later retrieval
-  function self.set_certificate(domain, cert, key)
-    return self.set_certificate_file(domain, cert) and
-           self.set_certificate_key(domain, key)
+  function self.set_certificate(domain, type, crt, key)
+    return self.set_certificate_file(domain, type, crt) and
+           self.set_certificate_key(domain, type, key)
   end
 
   -- retrieve both certificate file and key from
   -- the shared cache
-  function self.get_certificate(domain)
-    return self.get_certificate_file(domain),
-           self.get_certificate_key(domain)
+  function self.get_certificate(domain, type)
+    return self.get_certificate_file(domain, type),
+           self.get_certificate_key(domain, type)
   end
 
   -- deletes the certificate file from the
   -- shared cache
-  function self.delete_certificate_file(domain)
-    local key = self.crt(domain)
+  function self.delete_certificate_file(domain, type)
+    local key = self.crt(domain, type)
     return self.cache:delete(key)
   end
 
   -- deletes the certificate key from the
   -- shared cache
-  function self.delete_certificate_key(domain)
-    local key = self.key(domain)
+  function self.delete_certificate_key(domain, type)
+    local key = self.key(domain, type)
     return self.cache:delete(key)
   end
 
   -- deletes both certificate file and key from
   -- the shared cache
-  function self.delete_certificate(domain)
-    return self.delete_certificate_file(domain) and
-           self.delete_certificate_key(domain)
+  function self.delete_certificate(domain, type)
+    return self.delete_certificate_file(domain, type) and
+           self.delete_certificate_key(domain, type)
   end
 
   -- calls flush_expired()

@@ -11,17 +11,9 @@ function tls_strategy_consul.new(args)
   self.consul = require("resty.consul")
 
   -- certificate files path in Consul KV
-  self.certs_path      = args.certs_path             or "tls/production/certs"
+  self.crt_path        = args.crt_path               or "tls/{{domain}}/crt"
   -- certificate keys path in Consul KV
-  self.keys_path       = args.keys_path              or "tls/production/keys"
-  -- certificate files Consul key prefix
-  self.certs_prefix    = args.certs_prefix           or ""
-  -- certificate keys Consul key prefix
-  self.keys_prefix     = args.keys_prefix            or ""
-  -- certificate files Consul key suffix
-  self.certs_suffix    = args.certs_suffix           or ""
-  -- certificate keys Consul key suffix
-  self.keys_suffix     = args.keys_suffix            or ""
+  self.key_path        = args.key_path               or "tls/{{domain}}/key"
   -- consul host
   self.host            = args.consul_host            or "127.0.0.1"
   -- consul port
@@ -44,7 +36,10 @@ function tls_strategy_consul.new(args)
   end
 
   -- returns both the certificate file and key for the given domain
-  function self.retrieve(domain)
+  function self.get_certificate(domain, type)
+    self.vars.domain = domain
+    self.vars.type = type
+
     -- instantiates the consul object
     local consul = self.consul:new({
       host            = self.host,
@@ -59,23 +54,24 @@ function tls_strategy_consul.new(args)
       }
     })
     -- print some useful debugging info
-    local consul_key_cert_file = self.certs_path .. "/" .. self.certs_prefix .. domain .. self.certs_suffix
-    local consul_key_cert_key  = self.keys_path .. "/" .. self.keys_prefix .. domain .. self.keys_suffix
-
-    print("retrieving certificate file from KV path " .. consul_key_cert_file)
-    print("retrieving certificate key from KV path " .. consul_key_cert_key)
+    local crt_kv_path = self.replace_vars(self.crt_path)
+    local key_kv_path = self.replace_vars(self.key_path)
 
     -- execute the transaction and evaluate results
     local res, err = consul:txn({
-      { KV = { Verb = "get", Key = consul_key_cert_file } },
-      { KV = { Verb = "get", Key = consul_key_cert_key  } },
+      { KV = { Verb = "get", Key = crt_kv_path } },
+      { KV = { Verb = "get", Key = key_kv_path } },
     })
+
+    local found = tostring(res ~= nil or res ~= {})
 
     -- returns the error, if present
     if not res then
       ngx.log(ngx.ERR, err)
       return
     end
+
+    print("crt=" .. crt_kv_path, ", key=" .. key_kv_path .. "; found=" .. found)
 
     -- returns the certificate and keys just read
     return res.body.Results[1].KV.Value or nil,

@@ -66,25 +66,17 @@ the origin
 local tlsmgr = require("resty.tls_manager")
 tlsmgr.configure({
   -- strategy to use
-  strategy = "files",              -- default: "files"
+  strategy = "files",                          -- default: "files"
   -- strategy prefix (for custom implementations)
-  strategy_prefix = "my.strategy", -- default: "resty.tls_manager.strategy"
+  strategy_prefix = "my.strategy",             -- default: "resty.tls_manager.strategy"
   -- ngx.shared[] dictionary name
-  cache_name = "foo",              -- default: "tls"
+  cache_name = "foo",                          -- default: "tls"
   -- certificate cache ttl,
-  cache_ttl = 300,                -- default: 3600
+  cache_ttl = 300,                             -- default: 3600
   -- path where to load certificates from
-  certs_path = "/path/to/certs",  -- default: "/etc/nginx/ssl"
+  crt_path = "/path/to/certs/{{domain}}.pem",  -- default: "/etc/nginx/ssl/{{domain}}.pem"
   -- path where to load certificate keys from
-  keys_path = "/path/to/keys",    -- default: "/etc/nginx/ssl"
-  -- certificates files prefix
-  certs_prefix = "crtprefix.",    -- default: ""
-  -- certificates key files prefix
-  keys_prefix = "keyprefix.",     -- default: ""
-  -- certificate files extension
-  certs_suffix = ".foo",          -- default: ".crt"
-  -- certificate key files extension
-  keys_suffix = ".bar",           -- default: ".key"
+  key_path = "/path/to/keys/{{domain}}.key",   -- default: "/etc/nginx/ssl"
 })
 tlsmgr.handle()
 ```
@@ -96,39 +88,31 @@ Requires: [lua-resty-consul](https://github.com/hamishforbes/lua-resty-consul)
 ```lua
 local tlsmgr = require("resty.tls_manager").configure({
   -- strategy to use
-  strategy = "consul",             -- default: "files"
+  strategy = "consul",                   -- default: "files"
   -- strategy prefix (for custom implementations)
-  strategy_prefix = "my.strategy", -- default: "resty.tls_manager.strategy"
+  strategy_prefix = "my.strategy",       -- default: "resty.tls_manager.strategy"
   -- certificate cache ttl,
-  cache_ttl = 300,                 -- default: 3600
+  cache_ttl = 300,                       -- default: 3600
   -- path where to load certificates from
-  certs_path = "path/to/certs",    -- default: "tls/production/certs"
+  crt_path = "path/to/certs/{{domain}}", -- default: "tls/production/certs"
   -- path where to load certificate keys from
-  keys_path = "path/to/keys",      -- default: "tls/production/keys"
-  -- certificates files prefix
-  certs_prefix = "prefix.",        -- default: ""
-  -- certificates key files prefix
-  keys_prefix  = "prefix.",        -- default: ""
-    -- certificate files suffix
-  certs_suffix = ".foo",           -- default: ""
-  -- certificate key files suffix
-  keys_suffix = ".bar",            -- default: ""
+  key_path = "path/to/keys/{{domain}}",  -- default: "tls/production/keys"
   -- consul host
-  consul_host = "192.168.1.2",     -- default: "127.0.0.1"
+  consul_host = "192.168.1.2",           -- default: "127.0.0.1"
   -- consul port
-  consul_port = 8500,              -- default: 8500
+  consul_port = 8500,                    -- default: 8500
   -- consul token
-  consul_token = "xxxx-yyy-zzz",   -- default: ""
+  consul_token = "xxxx-yyy-zzz",         -- default: ""
   -- consul ssl
-  consul_ssl = true,               -- default: false
+  consul_ssl = true,                     -- default: false
   -- consul ssl peer verification
-  consul_ssl_verify = false,       -- default: true
+  consul_ssl_verify = false,             -- default: true
   -- consul sni host
-  consul_sni_host = "foo.bar",     -- default: nil
+  consul_sni_host = "foo.bar",           -- default: nil
   -- consul connect timeout (ms)
-  consul_connect_timeout = 5000,   -- default: 3000
+  consul_connect_timeout = 5000,         -- default: 3000
   -- consul read timeout (ms)
-  consul_read_timeout = 5000,      -- default: 3000
+  consul_read_timeout = 5000,            -- default: 3000
 })
 tlsmgr.handle()
 ```
