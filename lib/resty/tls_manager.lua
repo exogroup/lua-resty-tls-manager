@@ -128,6 +128,8 @@ local function new()
     local ocsp_cache_key = nil
     -- Is OCSP response coming from cache?
     local from_cache = true
+    -- Is OCSP response valid?
+    local ocsp_valid_response = false
 
     if self.ocsp_cache then
       -- cache key for OCSP response
@@ -174,7 +176,6 @@ local function new()
       -- OCSP response got from the responder
       ocsp_response = res.body
 
-      local ocsp_valid_response = false
       -- validate OCSP response and cache when valid
       if ocsp_response and #ocsp_response > 0 then
         local ok, err = _M.ocsp.validate_ocsp_response(ocsp_response, der_cert_chain)
@@ -188,6 +189,9 @@ local function new()
         -- response not coming from cache
         from_cache = false
       end
+    else
+      -- response is cached, so implicitly valid
+      ocsp_valid_response = true
     end
     
     return ocsp_valid_response, ocsp_response, from_cache
@@ -219,6 +223,8 @@ local function new()
         return
       end
       ngx.log(ngx.INFO, "OCSP status set successfully; from_cache=".. tostring(from_cache))
+    else
+      ngx.log(ngx.ERR, "something went wrong")
     end
   end
 
