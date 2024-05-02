@@ -1,92 +1,58 @@
-local cache = {}
+local _M = {}
 
-function cache.new(name, ttl)
+function _M.new(name, ttl)
   local self = {}
 
   -- shared dict key to use
   self.name = name or "tls"
   -- default cache keys ttl
   self.ttl  = ttl or 3600
-
+  -- validate shared cache dictionary
   self.cache = ngx.shared[self.name]
   if type(self.cache) ~= "table" then
     ngx.log(ngx.ERR, "shared dictionary [".. self.name .."] was not found")
     return
   end
 
-  -- returns the certificate file cache key name
-  function self.crt(domain, type)
-    return "crt--" .. type .. "--" .. domain
+  -- split cert+key by a NULL char
+  local function split(data)
+    if data then
+      -- %z is NULL char
+      -- https://www.lua.org/pil/20.2.html
+      return string.match(data,"^([^%z]+)%z([^%z]+)$")
+    end
   end
 
-  -- returns the certificate key cache key name
-  function self.key(domain, type)
-    return "key--" .. type .. "--" .. domain
+  -- join cert+key with a NULL char
+  local function join(crt, key)
+    return crt .. string.char(0) .. key
   end
 
-  -- retrieves the certificate for a domain
-  -- stored in shared cache. Returns nil when
-  -- the certificate is not found
-  function self.get_certificate_file(domain, type)
-    local key = self.crt(domain, type)
-    return self.cache:get(key)
+  -- store cert+key in the shared cache
+  function self.set(domain, crt, key)
+    return self.cache:set(domain, join(crt,key), self.ttl)
   end
 
-  -- retrieves the certificate key for a domain
-  -- stored in shared cache. Returns nil when
-  -- the keys is not found
-  function self.get_certificate_key(domain, type)
-    local key = self.key(domain, type)
-    return self.cache:get(key)
+  -- retrieve cert+key from the shared cache
+  function self.get(domain)
+    return split(self.cache:get(domain))
   end
 
-  -- stores the certificate for a domain in the
-  -- shared cache for later retrieval
-  function self.set_certificate_file(domain, type, data)
-    local key = self.crt(domain, type)
-    return self.cache:set(key, data, self.ttl)
-  end
-
-  -- stores the certificate key for a domain in the
-  -- shared cache for later retrieval
-  function self.set_certificate_key(domain, type, data)
-    local key = self.key(domain, type)
-    return self.cache:set(key, data, self.ttl)
-  end
-
-  -- stores both certificate file and key in the
-  -- shared cache for later retrieval
-  function self.set_certificate(domain, type, crt, key)
-    return self.set_certificate_file(domain, type, crt) and
-           self.set_certificate_key(domain, type, key)
-  end
-
-  -- retrieve both certificate file and key from
-  -- the shared cache
-  function self.get_certificate(domain, type)
-    return self.get_certificate_file(domain, type),
-           self.get_certificate_key(domain, type)
-  end
-
-  -- deletes the certificate file from the
-  -- shared cache
-  function self.delete_certificate_file(domain, type)
-    local key = self.crt(domain, type)
-    return self.cache:delete(key)
-  end
-
-  -- deletes the certificate key from the
-  -- shared cache
-  function self.delete_certificate_key(domain, type)
-    local key = self.key(domain, type)
-    return self.cache:delete(key)
-  end
-
-  -- deletes both certificate file and key from
-  -- the shared cache
+  -- delete cert+key stored in shared cache
   function self.delete_certificate(domain, type)
-    return self.delete_certificate_file(domain, type) and
-           self.delete_certificate_key(domain, type)
+    return self.cache:delete(domain)
+  end
+
+  -- store an ocsp response for a certificate in cache
+  function self.ocsp_set(key, response, ttl)
+    local ocsp_key = "ocsp:" .. key
+    return self.cache:set(ocsp_key, response, ttl)
+  end
+
+  -- retrieve an ocsp response for a certificate from cache
+  function self.ocsp_get(key)
+    local ocsp_key = "ocsp:" .. key
+    return self.cache:get(ocsp_key)
   end
 
   -- calls flush_expired()
@@ -97,4 +63,4 @@ function cache.new(name, ttl)
   return self
 end
 
-return cache
+return _M

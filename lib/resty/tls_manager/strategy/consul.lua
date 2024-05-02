@@ -1,45 +1,44 @@
--- Strategy: consul
--- Reads the certificate file and key for the given domain
--- from specific paths in Consul KV store
+-- strategy: consul
+-- read the certificate file and key for the given domain
+-- from specific paths on Consul KV store.
 
-local tls_strategy_consul = {}
+local _M = {}
 
-function tls_strategy_consul.new(args)
-  local self = {}
+function _M.new(args)
+  local self = require "resty.tls_manager.strategy"
 
   -- loads consul object
   self.consul = require("resty.consul")
 
   -- certificate files path in Consul KV
-  self.crt_path        = args.crt_path               or "tls/{{domain}}/crt"
+  self.crt_path = args.crt_path or "tls/{{domain}}/crt"
   -- certificate keys path in Consul KV
-  self.key_path        = args.key_path               or "tls/{{domain}}/key"
+  self.key_path = args.key_path or "tls/{{domain}}/key"
+  -- replace the wildcard string (*.) in the domain with custom string
+  self.wildcard_replace = args.wildcard_replace or nil
   -- consul host
-  self.host            = args.consul_host            or "127.0.0.1"
+  self.host = args.consul_host or "127.0.0.1"
   -- consul port
-  self.port            = args.consul_port            or 8500
+  self.port = args.consul_port or 8500
   -- consul token
-  self.token           = args.consul_token           or ""
+  self.token = args.consul_token or ""
   -- consul ssl
-  self.ssl             = args.consul_ssl             or false
+  self.ssl = args.consul_ssl or false
   -- consul ssl verify
-  self.ssl_verify      = args.consul_ssl_verify      or true
+  self.ssl_verify = args.consul_ssl_verify or true
   -- consul sni host
-  self.sni_host        = args_consul_sni_host        or nil
-  -- consul connect timeout
+  self.sni_host = args.consul_sni_host or nil
+  -- consul connect timeout (default: 3s)
   self.connect_timeout = args.consul_connect_timeout or (3 * 1000)
-  -- consul read timeout
-  self.read_timeout    = args.consul_read_timeout    or (3 * 1000)
+  -- consul read timeout (default: 3s)
+  self.read_timeout = args.consul_read_timeout or (3 * 1000)
 
   function self.name()
     return "consul"
   end
 
   -- returns both the certificate file and key for the given domain
-  function self.get_certificate(domain, type)
-    self.vars.domain = domain
-    self.vars.type = type
-
+  function self.get_certificate(domain)
     -- instantiates the consul object
     local consul = self.consul:new({
       host            = self.host,
@@ -82,4 +81,4 @@ function tls_strategy_consul.new(args)
   return self
 end
 
-return tls_strategy_consul
+return _M
