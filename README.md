@@ -97,8 +97,7 @@ Each strategy defines the way how certificates are retrieved from the origin.
 ### Files
 
 ```lua
-local tlsmgr = require("resty.tls_manager")
-tlsmgr.configure({
+local tlsmgr = require("resty.tls_manager").configure({
   -- Path where to load certificates from.
   crt_path = "/path/to/certs/{{domain}}.pem",  -- default: "/etc/nginx/ssl/{{domain}}.pem"
   -- Path where to load certificate keys from.
