@@ -1,6 +1,12 @@
 # lua-resty-tls-manager
 
-Automatically Provision SSL Certificate Files
+This is a Lua-based library designed for use with Nginx to automate the provisioning
+and management of SSL/TLS certificates. It supports dynamic certificate loading and
+retrieval strategies, including local file storage and Consul integration.
+
+The library also handles OCSP stapling and certificate caching, offering configurable
+timeouts and caching options. It provides tools for dynamically serving certificates
+based on domain names and allows on-demand SSL cache clearing.
 
 > [!WARNING]
 > This library is under active development and may undergo changes without prior notice.<br />
@@ -8,6 +14,19 @@ Automatically Provision SSL Certificate Files
 
 ## Requirements
 * [lua-resty-http](https://github.com/ledgetech/lua-resty-http)
+
+## Installing
+
+See https://github.com/openresty/lua-nginx-module for details on how to install
+the Lua module for Nginx.
+
+Clone the repository and execute the following command to install the library
+in the default Lua include directory:
+```sh
+git clone https://github.com/exogroup/lua-resty-tls-manager
+cd lua-resty-tls-manager
+make install
+```
 
 ## Configuration
 
