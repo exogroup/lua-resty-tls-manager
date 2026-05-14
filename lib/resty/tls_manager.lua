@@ -384,7 +384,9 @@ local function new()
       return
     end
     -- run oscp responder
-    ocsp_responder(crt)
+    if self.ocsp then
+        ocsp_responder(crt)
+    end
     -- assign and return the retrieved certificate
     if self.ssl_set_certificate(crt, key) then
       local from_cache_s = tostring(from_cache)
